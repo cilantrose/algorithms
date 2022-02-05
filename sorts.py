@@ -55,7 +55,7 @@ def radixLSD(dataset, base: int):
 def radixLSD2P(dataset):
     """
     least-significant radix sort, but predetermines the number of buckets to use
-    best base is roughly 2^ceil(log2(max(dataset)) / 2)
+    best base is roughly 2^ceil(log2(max_value) / 2)
 
     :param dataset: input array
     :return: sorted array, the runtime of the sort
@@ -74,7 +74,7 @@ def radixLSD2P(dataset):
         for j in range(base): buckets[j] = []
         for data in temp: buckets[data >> i & mask].append(data)
         temp.clear()
-        for j in range(base): temp += buckets[j]
+        for j in buckets: temp += buckets[j]
     end_time = time()
     dataset = np.array(temp)
     return dataset, end_time - start_time
@@ -271,6 +271,36 @@ def testSort(sort, title, dataset, write=None, opt=None, nl=True):
 
     print(f'Starting {title} on array of length {len(dataset)}')
     output, runtime = sort(dataset) if opt is None else sort(dataset, opt)
-    print(f'{title.capitalize()} completed in {runtime} {"seconds" if runtime > 1 else "second"}, {validate(output)} discrepancies found with sorted list')
+    print(f'{title.capitalize()} completed in {runtime} {"seconds" if runtime > 1 else "second"}'
+          f', {validate(output)} discrepancies found with sorted list')
     if write is not None:  writeData(write, output)
+    if nl: print()
+
+
+def testSortIterative(sort, title, size, iterations, opt=None, nl=True):
+    """
+    simple test for individual sorts.
+
+    :param sort: a sorting function
+    :param title: the name of the sort
+    :param dataset: the input array
+    :param write: an output file to write to - optional, no write if None, default None
+    :param opt: parameter for sorts with a second field - optional, default None
+    :param nl: whether a newline should be printed after the sort, default True
+    :return:
+    """
+
+    print(f'Starting {title}s on {iterations} arrays of length {size}')
+    total = 0
+    total_errors = 0
+    for i in range(iterations):
+        dataset = genDataArray(size)
+        dataset, runtime = sort(dataset) if opt is None else sort(dataset, opt)
+        total += runtime
+        total_errors += validate(dataset)
+    avg = total / iterations
+    avg_errors = total_errors / iterations
+    print(f'{iterations} {title}s completed in an average of {avg} {"seconds" if avg > 1 else "second"}, with an '
+          f'average of {avg_errors if avg_errors != 0 else 0} unsorted '
+          f'{"entries" if avg_errors > 1 or avg_errors == 0 else "entry"}')
     if nl: print()
