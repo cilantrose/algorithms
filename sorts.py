@@ -1,84 +1,99 @@
-from math import log2, ceil, log
-from random import random
+from time import time
+import math as math
+import numpy as np
+import random as rand
+rng = np.random.default_rng()
 
 
 # ==================================================== STABLE ====================================================
 
 
-def radixLSB(dataset: list):
+def radixLSB(dataset):
     """
     radix sort starting at the least significant bit, only utilizing 2 buckets.
 
-    :param dataset: input list
-    :return: sorted list
+    :param dataset: input array
+    :return: sorted array, the runtime of the sort
     """
+    temp = dataset.tolist()
+    start_time = time()
     # iterate over the length of the longest value in the set
-    for i in range(0, ceil(log2(max(dataset)))):
+    for i in range(0, math.ceil(math.log2(max(temp)))):
         buckets = [[], []]
         # assign data to buckets based on value of bit at the current position
-        for data in dataset: buckets[data >> i & 1].append(data)
+        for data in temp: buckets[data >> i & 1].append(data)
         # concatenate buckets in order and assign to the data set
-        dataset = buckets[0] + buckets[1]
-    return dataset
+        temp = buckets[0] + buckets[1]
+    end_time = time()
+    dataset = np.array(temp)
+    return dataset, end_time - start_time
 
 
-def radixLSD(dataset: list, base: int):
+def radixLSD(dataset, base: int):
     """
     least-significant radix sort but using an integer base and standard arithmetic to calculate bucket count.
 
-    :param dataset: input list
+    :param dataset: input array
     :param base: int, indicating what base is used to create buckets and sort
-    :return: sorted list
+    :return: sorted array, the runtime of the sort
     """
+    temp = dataset.tolist()
+    start_time = time()
     buckets = {}
-    for i in range(0, ceil(log(max(dataset), base))):
+    for i in range(0, math.ceil(math.log(max(temp), base))):
         # create buckets using arbitrary base
         for j in range(base): buckets[j] = []
         # formula used to find value of digit: floor(num) * digit mod base
-        for data in dataset: buckets[data // base ** i % base].append(data)
-        dataset.clear()
-        for j in range(base): dataset += buckets[j]
-    return dataset
+        for data in temp: buckets[data // base ** i % base].append(data)
+        temp.clear()
+        for j in range(base): temp += buckets[j]
+    end_time = time()
+    dataset = np.array(temp)
+    return dataset, end_time - start_time
 
 
-def radixLSD2P(dataset: list, power: int):
+def radixLSD2P(dataset):
     """
-    least-significant radix sort, but only accepting powers of 2 as a base.
-    runtime is less (20-25% for 2^16) than arithmetic radix sort with same base due to usage of bitwise ops.
-    best base is roughly 2^ceil(log2(max(dataset)))
+    least-significant radix sort, but predetermines the number of buckets to use
+    best base is roughly 2^ceil(log2(max(dataset)) / 2)
 
-    :param dataset: input list
-    :param power: int, indicating which power of 2 used to create buckets and sort
-    :return: sorted list
+    :param dataset: input array
+    :return: sorted array, the runtime of the sort
     """
+    temp = dataset.tolist()
+    start_time = time()
+    # determine the best base to use
+    power = math.ceil(math.log2(max(temp)) / 2)
     buckets = {}
     # pre-initializing values decreases runtime
     base = 2 ** power
     mask = base - 1
     # originally used i*power in the bucket assignment but having the power be the increment
     # guarantees no arithmetic during bucket calculation and thus less runtime
-    for i in range(0, ceil(log(max(dataset), base)) * power, power):
+    for i in range(0, math.ceil(math.log(max(temp), base)) * power, power):
         for j in range(base): buckets[j] = []
-        for data in dataset: buckets[data >> i & mask].append(data)
-        dataset.clear()
-        for j in range(base): dataset += buckets[j]
-    return dataset
+        for data in temp: buckets[data >> i & mask].append(data)
+        temp.clear()
+        for j in range(base): temp += buckets[j]
+    end_time = time()
+    dataset = np.array(temp)
+    return dataset, end_time - start_time
 
 
 # =================================================== UNSTABLE ===================================================
 
 
-def quicksort(dataset: list, left, right):
+def quickSort(dataset):
     """
-    iteratively partitions values in a list about the rightmost value, moving greater elements
+    iteratively partitions values in a array about the rightmost value, moving greater elements
     to the right and lesser elements to the left, adding ranges to a stack, then repeating for
     each range in the stack.
 
-    :param dataset: the full list of data
-    :param left: sorting range lower bound
-    :param right: sorting range upper bound
-    :return: sorted list
+    :param dataset: the full array of data
+    :return: sorted array, the runtime of the sort
     """
+    start_time = time()
+    left, right = 0, len(dataset) - 1
     # initialize a stack to keep track of left/right pairs
     stack = [(left, right)]
     while len(stack) > 0:
@@ -96,19 +111,21 @@ def quicksort(dataset: list, left, right):
         # if there are valid ranges to the left or right of the current range, add them to the stack
         if index - 1 > left: stack.append([left, index - 1])
         if index + 1 < right: stack.append([index + 1, right])
-    return dataset
+    end_time = time()
+    return dataset, end_time - start_time
 
 
-def heapsort(dataset: list):
+def heapSort(dataset):
     """
     basic heapsort that heapifies up first then sifts down to find largest values.
 
-    :param dataset: the full list of data
-    :return: sorted list
+    :param dataset: the full array of data
+    :return: sorted array, the runtime of the sort
     """
+    start_time = time()
     max_len = len(dataset)
     # heapify the set from below, O(n log n) worst case
-    for i in range(max_len // 2 - 1, -1, -1):
+    for i in range((max_len >> 1) - 1, -1, -1):
         heapify(dataset, i, max_len)
     # sift down, heapify can be repurposed for this
     for i in range(max_len - 1, 0, -1):
@@ -116,7 +133,8 @@ def heapsort(dataset: list):
         swap(dataset, 0, i)
         # heapify again so that the largest value is at the top
         heapify(dataset, 0, i)
-    return dataset
+    end_time = time()
+    return dataset, end_time - start_time
 
 
 # =================================================== HELPERS ===================================================
@@ -148,10 +166,10 @@ def heapify(dataset, node, bound):
 
 def validate(dataset):
     """
-    helper function to find the number of discrepancies in a supposedly sorted list.
+    helper function to find the number of discrepancies in a supposedly sorted array.
     prints discrepancies for each position.
 
-    :param dataset: input list
+    :param dataset: input array
     :return: the number of discrepancies found, 0 if none
     :rtype: int
     """
@@ -167,9 +185,9 @@ def validate(dataset):
 
 def peek(stack):
     """
-    helper function to peek at the top of a list, returning None if empty.
+    helper function to peek at the top of a array, returning None if empty.
 
-    :param stack: a list to be processed as a stack
+    :param stack: a array to be processed as a stack
     :return: the value at the top of the stack
     :rtype: generic or None
     """
@@ -178,13 +196,16 @@ def peek(stack):
 
 def swap(dataset, i, j):
     """
-    helper function to swap values at two indices in a list.
+    helper function to swap values at two indices in a array.
 
-    :param dataset: the input list
+    :param dataset: the input array
     :param i: index 1
     :param j: index 2
     """
     dataset[i], dataset[j] = dataset[j], dataset[i]
+
+
+# =========================================== DATA, FILE I/O, TESTING ===========================================
 
 
 def genData(file, size, power=31):
@@ -199,52 +220,57 @@ def genData(file, size, power=31):
     open(file, 'w').close()
     f = open(file, "a")
     for i in range(size):
-        j = int(random() * float(2 ** power - 1))
+        j = int(rng.random() * float(2 ** power - 1))
         f.write(str(j) + "\n")
     f.close()
 
 
-def genDataList(size, power=31):
+def genDataArray(size, power=31):
     """
-    generates random integer data within a certain range and returns it as a list.
+    generates random integer data within a certain range and returns it as a array.
 
     :param size: the amount of data to be generated
     :param power: 2^power is the max bound of randomly generated data
-    :return: the randomly generated list
-    :rtype: list[int]
+    :return: the randomly generated array
     """
-    return_list = []
+    temp = []
     for i in range(size):
-        return_list.append(int(random() * float(2 ** power - 1)))
-    return return_list
-
-
-def toList(file):
-    """
-    takes data from a file and puts it in a list.
-
-    :param file: string - the relative path of the output file
-    :return: the list
-    :rtype: list[int]
-    """
-    dataset = []
-    f = open(file, "r")
-    for line in f:
-        dataset.append(int(line.strip()))
-    f.close()
-    return dataset
+        temp.append(int(rand.random() * 2 ** power))
+    return_array = np.array(temp)
+    return return_array
 
 
 def writeData(file, dataset):
     """
-    writes data from a list onto a file, one line per element
+    writes data from a array onto a file, one line per element
 
     :param file: string - the relative path of the output file
-    :param dataset: the list to be written
+    :param dataset: the array to be read from
     :return: None
     """
     open(file, 'w').close()
     f = open(file, "a")
     for i in dataset:
         f.write(str(i) + "\n")
+    print(f'Results written to {f.name}')
     f.close()
+
+
+def testSort(sort, title, dataset, write=None, opt=None, nl=True):
+    """
+    simple test for individual sorts.
+
+    :param sort: a sorting function
+    :param title: the name of the sort
+    :param dataset: the input array
+    :param write: an output file to write to - optional, no write if None, default None
+    :param opt: parameter for sorts with a second field - optional, default None
+    :param nl: whether a newline should be printed after the sort, default True
+    :return:
+    """
+
+    print(f'Starting {title} on array of length {len(dataset)}')
+    output, runtime = sort(dataset) if opt is None else sort(dataset, opt)
+    print(f'{title.capitalize()} completed in {runtime} {"seconds" if runtime > 1 else "second"}, {validate(output)} discrepancies found with sorted list')
+    if write is not None:  writeData(write, output)
+    if nl: print()
