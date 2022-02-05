@@ -1,4 +1,5 @@
 from math import log2, ceil, log
+from random import random
 
 
 # ==================================================== STABLE ====================================================
@@ -6,7 +7,7 @@ from math import log2, ceil, log
 
 def radixLSB(dataset: list):
     """
-    radix sort starting at the least significant bit, only utilizing 2 buckets
+    radix sort starting at the least significant bit, only utilizing 2 buckets.
 
     :param dataset: input list
     :return: sorted list
@@ -44,7 +45,7 @@ def radixLSD2P(dataset: list, power: int):
     """
     least-significant radix sort, but only accepting powers of 2 as a base.
     runtime is less (20-25% for 2^16) than arithmetic radix sort with same base due to usage of bitwise ops.
-    best base is consistently 2^16 for large data sets.
+    best base is roughly 2^ceil(log2(max(dataset)))
 
     :param dataset: input list
     :param power: int, indicating which power of 2 used to create buckets and sort
@@ -76,7 +77,7 @@ def quicksort(dataset: list, left, right):
     :param dataset: the full list of data
     :param left: sorting range lower bound
     :param right: sorting range upper bound
-    :return: the dataset - for convenience with assignment, although lists are already mutable inside functions
+    :return: sorted list
     """
     # initialize a stack to keep track of left/right pairs
     stack = [(left, right)]
@@ -99,15 +100,85 @@ def quicksort(dataset: list, left, right):
 
 
 def heapsort(dataset: list):
-    return
+    """
+    basic heapsort that heapifies up first then sifts down to find largest values.
+
+    :param dataset: the full list of data
+    :return: sorted list
+    """
+    max_len = len(dataset)
+    # heapify the set from below, O(n log n) worst case
+    for i in range(max_len // 2 - 1, -1, -1):
+        heapify(dataset, i, max_len)
+    # sift down, heapify can be repurposed for this
+    for i in range(max_len - 1, 0, -1):
+        # swap largest value with first value outside of sorting range
+        swap(dataset, 0, i)
+        # heapify again so that the largest value is at the top
+        heapify(dataset, 0, i)
+    return dataset
 
 
 # =================================================== HELPERS ===================================================
 
 
+def heapify(dataset, node, bound):
+    """
+    heapifies the input array, such that in a tree array where child nodes are 2 * node + 1 and 2 * node + 2
+    any arbitrary parent will be greater than its children.
+    this process is recursive, but recursion depth should not be an issue as the recursion depth is
+    log2 of the size, and a 2^1000 size dataset is decidedly impractical.
+
+    :param dataset: the input array
+    :param node: the current
+    :param bound:
+    :return: None
+    """
+    left = node * 2 + 1
+    right = node * 2 + 2
+    largest = node
+    if left < bound and dataset[left] > dataset[node]:
+        largest = left
+    if right < bound and dataset[right] > dataset[largest]:
+        largest = right
+    if largest != node:
+        swap(dataset, node, largest)
+        heapify(dataset, largest, bound)
+
+
+def validate(dataset):
+    """
+    helper function to find the number of discrepancies in a supposedly sorted list.
+    prints discrepancies for each position.
+
+    :param dataset: input list
+    :return: the number of discrepancies found, 0 if none
+    :rtype: int
+    """
+    last = 0
+    errors = 0
+    for i in range(len(dataset)):
+        if dataset[i] < dataset[last]:
+            print(f'discrepancy: element {i}: {dataset[i]} < element {last}: {dataset[last]}')
+            errors += 1
+        last = i
+    return errors
+
+
+def peek(stack):
+    """
+    helper function to peek at the top of a list, returning None if empty.
+
+    :param stack: a list to be processed as a stack
+    :return: the value at the top of the stack
+    :rtype: generic or None
+    """
+    return stack[-1] if stack else None
+
+
 def swap(dataset, i, j):
     """
-    helper function to swap values at two indices in a list
+    helper function to swap values at two indices in a list.
 
     :param dataset: the input list
     :param i: index 1
@@ -116,12 +187,64 @@ def swap(dataset, i, j):
     dataset[i], dataset[j] = dataset[j], dataset[i]
 
 
-def peek(stack):
+def genData(file, size, power=31):
     """
-    helper function to peek at the top of a list, returning None if empty
+    generates random integer data within a certain range and puts it in a file.
 
-    :param stack: a list to be processed as a stack
-    :return: the value at the top of the stack
-    :rtype: generic or None
+    :param file: string - the relative path of the output file
+    :param size: the amount of data to be generated
+    :param power: 2^power is the max bound of randomly generated data
+    :return: None
     """
-    return stack[-1] if stack else None
+    open(file, 'w').close()
+    f = open(file, "a")
+    for i in range(size):
+        j = int(random() * float(2 ** power - 1))
+        f.write(str(j) + "\n")
+    f.close()
+
+
+def genDataList(size, power=31):
+    """
+    generates random integer data within a certain range and returns it as a list.
+
+    :param size: the amount of data to be generated
+    :param power: 2^power is the max bound of randomly generated data
+    :return: the randomly generated list
+    :rtype: list[int]
+    """
+    return_list = []
+    for i in range(size):
+        return_list.append(int(random() * float(2 ** power - 1)))
+    return return_list
+
+
+def toList(file):
+    """
+    takes data from a file and puts it in a list.
+
+    :param file: string - the relative path of the output file
+    :return: the list
+    :rtype: list[int]
+    """
+    dataset = []
+    f = open(file, "r")
+    for line in f:
+        dataset.append(int(line.strip()))
+    f.close()
+    return dataset
+
+
+def writeData(file, dataset):
+    """
+    writes data from a list onto a file, one line per element
+
+    :param file: string - the relative path of the output file
+    :param dataset: the list to be written
+    :return: None
+    """
+    open(file, 'w').close()
+    f = open(file, "a")
+    for i in dataset:
+        f.write(str(i) + "\n")
+    f.close()
