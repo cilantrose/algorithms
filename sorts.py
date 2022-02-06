@@ -2,10 +2,26 @@ from time import time
 import math as math
 import numpy as np
 import random as rand
+
 rng = np.random.default_rng()
 
 
 # ==================================================== STABLE ====================================================
+
+
+def mergesort(dataset):
+    """
+    mergesort timing function, the bulk of the mergesort algorithm is in mergeSplit()
+
+    :param dataset: input array
+    :return: sorted array, the runtime of the sort
+    """
+    start_time = time()
+    # the rightmost index of the initial set
+    max_len = len(dataset) - 1
+    mergeSplit(dataset, 0, max_len)
+    end_time = time()
+    return dataset, end_time - start_time
 
 
 def radixLSB(dataset):
@@ -83,7 +99,29 @@ def radixLSD2P(dataset):
 # =================================================== UNSTABLE ===================================================
 
 
-def quickSort(dataset):
+def heapsort(dataset):
+    """
+    basic heapsort that heapifies up first then sifts down to find largest values.
+
+    :param dataset: the full array of data
+    :return: sorted array, the runtime of the sort
+    """
+    start_time = time()
+    max_len = len(dataset)
+    # heapify the set from below, O(n log n) worst case
+    for i in range((max_len >> 1) - 1, -1, -1):
+        heapify(dataset, i, max_len)
+    # sift down, heapify can be repurposed for this
+    for i in range(max_len - 1, 0, -1):
+        # swap largest value with first value outside of sorting range
+        swap(dataset, 0, i)
+        # heapify again so that the largest value is at the top
+        heapify(dataset, 0, i)
+    end_time = time()
+    return dataset, end_time - start_time
+
+
+def quicksort(dataset):
     """
     iteratively partitions values in a array about the rightmost value, moving greater elements
     to the right and lesser elements to the left, adding ranges to a stack, then repeating for
@@ -115,29 +153,48 @@ def quickSort(dataset):
     return dataset, end_time - start_time
 
 
-def heapSort(dataset):
-    """
-    basic heapsort that heapifies up first then sifts down to find largest values.
-
-    :param dataset: the full array of data
-    :return: sorted array, the runtime of the sort
-    """
-    start_time = time()
-    max_len = len(dataset)
-    # heapify the set from below, O(n log n) worst case
-    for i in range((max_len >> 1) - 1, -1, -1):
-        heapify(dataset, i, max_len)
-    # sift down, heapify can be repurposed for this
-    for i in range(max_len - 1, 0, -1):
-        # swap largest value with first value outside of sorting range
-        swap(dataset, 0, i)
-        # heapify again so that the largest value is at the top
-        heapify(dataset, 0, i)
-    end_time = time()
-    return dataset, end_time - start_time
-
-
 # =================================================== HELPERS ===================================================
+
+
+def mergeSplit(dataset: np.array, left, right):
+    """
+    the bulk of the mergesort. splits the input array into sub-arrays and recursively sorts each
+    of those sub-arrays before merging them.
+
+    :param dataset:
+    :param left:
+    :param right:
+    :return:
+    """
+    # operations are only done if the set being processed contains at least two elements
+    if right - left > 0:
+        # split the range in two by determine its midpoint, then run the mergesort on the subsets
+        mid = left + (right - left) // 2
+        mergeSplit(dataset, left, mid)
+        mergeSplit(dataset, mid + 1, right)
+        l_track = left
+        r_track = mid + 1
+        # temporary stack to track sorted elements
+        temp = []
+        while l_track < mid + 1 and r_track < right + 1:
+            # get the smallest from each side of the array until one of the sides is completely sorted
+            # this goes to the top of the stack
+            if dataset[l_track] < dataset[r_track]:
+                temp.append(dataset[l_track])
+                l_track += 1
+            else:
+                temp.append(dataset[r_track])
+                r_track += 1
+        # append the rest of the remaining side of the array to the stack
+        while l_track < mid + 1:
+            temp.append(dataset[l_track])
+            l_track += 1
+        while r_track < right + 1:
+            temp.append(dataset[r_track])
+            r_track += 1
+        # pop elements sequentially from the stack, smallest to largest
+        for i in range(left, right + 1):
+            dataset[i] = temp.pop(0)
 
 
 def heapify(dataset, node, bound):
@@ -162,25 +219,6 @@ def heapify(dataset, node, bound):
     if largest != node:
         swap(dataset, node, largest)
         heapify(dataset, largest, bound)
-
-
-def validate(dataset):
-    """
-    helper function to find the number of discrepancies in a supposedly sorted array.
-    prints discrepancies for each position.
-
-    :param dataset: input array
-    :return: the number of discrepancies found, 0 if none
-    :rtype: int
-    """
-    last = 0
-    errors = 0
-    for i in range(len(dataset)):
-        if dataset[i] < dataset[last]:
-            print(f'discrepancy: element {i}: {dataset[i]} < element {last}: {dataset[last]}')
-            errors += 1
-        last = i
-    return errors
 
 
 def peek(stack):
@@ -283,24 +321,43 @@ def testSortIterative(sort, title, size, iterations, opt=None, nl=True):
 
     :param sort: a sorting function
     :param title: the name of the sort
-    :param dataset: the input array
-    :param write: an output file to write to - optional, no write if None, default None
     :param opt: parameter for sorts with a second field - optional, default None
     :param nl: whether a newline should be printed after the sort, default True
     :return:
     """
 
-    print(f'Starting {title}s on {iterations} arrays of length {size}')
+    print(
+        f'Starting {title}{"s" if iterations > 1 else ""} on {iterations} array{"s" if iterations > 1 else ""} of length {size}')
     total = 0
     total_errors = 0
     for i in range(iterations):
         dataset = genDataArray(size)
         dataset, runtime = sort(dataset) if opt is None else sort(dataset, opt)
         total += runtime
-        total_errors += validate(dataset)
+        total_errors += validate(dataset, False)
     avg = total / iterations
     avg_errors = total_errors / iterations
-    print(f'{iterations} {title}s completed in an average of {avg} {"seconds" if avg > 1 else "second"}, with an '
-          f'average of {avg_errors if avg_errors != 0 else 0} unsorted '
-          f'{"entries" if avg_errors > 1 or avg_errors == 0 else "entry"}')
+    print(f'{iterations} {title}{"s" if iterations > 1 else ""} completed in an average of {avg} '
+          f'{"seconds" if avg > 1 else "second"}, with an average of {avg_errors if avg_errors != 0 else 0} '
+          f'unsorted {"entries" if avg_errors > 1 or avg_errors == 0 else "entry"}')
     if nl: print()
+
+
+def validate(dataset, verbose=True):
+    """
+    helper function to find the number of discrepancies in a supposedly sorted array.
+    prints discrepancies for each position.
+
+    :param verbose: whether each discrepancy ought to be printed or not
+    :param dataset: input array
+    :return: the number of discrepancies found, 0 if none
+    :rtype: int
+    """
+    last = 0
+    errors = 0
+    for i in range(len(dataset)):
+        if dataset[i] < dataset[last]:
+            if verbose: print(f'discrepancy: element {i}: {dataset[i]} < element {last}: {dataset[last]}')
+            errors += 1
+        last = i
+    return errors
