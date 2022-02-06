@@ -2,7 +2,6 @@ from time import time
 import math as math
 import numpy as np
 import random as rand
-
 rng = np.random.default_rng()
 
 

@@ -1,3 +1,4 @@
-# algorithms
-misc python algorithms stuff
-sorts: binary radix, variable base radix, quick, heap
+## misc python algorithms stuff
+___
+sorts: heap, merge, quick, radix<br>
+searches: binary
