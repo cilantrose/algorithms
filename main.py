@@ -9,4 +9,4 @@ if __name__ == '__main__':
     # sorts.testSortIterative(sorts.quicksort, "quicksort", 10000, 100)
     a = sorts.genDataArray(10000, 9)
     sorts.testSort(sorts.mergesort, "mergesort", a, "out.txt")
-    searches.testSearch(search.binarySearchRange, "binary search", a, 16)
+    searches.testSearch(search.exponentialSearchRange, "exponential search", a, 511)

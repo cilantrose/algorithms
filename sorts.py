@@ -264,7 +264,7 @@ def genData(file, size, power=31):
 
 def genDataArray(size, power=31):
     """
-    generates random integer data within a certain range and returns it as a array.
+    generates random integer data within a certain range (0 to 2^power) and returns it as a array.
 
     :param size: the amount of data to be generated
     :param power: 2^power is the max bound of randomly generated data
